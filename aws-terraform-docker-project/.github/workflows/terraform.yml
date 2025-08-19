@@ -11,7 +11,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./aws-terraform-docker-project
+        working-directory: aws-terraform-docker-project
 
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
