@@ -46,13 +46,13 @@ resource "aws_route_table_association" "public" {
 }
 
 resource "aws_instance" "web" {
-  ami                    = "ami-0c2b8ca1dad447f8a"
-  instance_type          = var.instance_type
-  subnet_id              = aws_subnet.public.id
-  vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
+  ami                         = "ami-0c2b8ca1dad447f8a"
+  instance_type               = var.instance_type
+  subnet_id                   = aws_subnet.public.id
+  vpc_security_group_ids      = [aws_security_group.allow_ssh_http.id]
   associate_public_ip_address = true
 
-user_data = <<-EOF
+  user_data = <<-EOF
               #!/bin/bash
               yum update -y
               amazon-linux-extras install docker -y
