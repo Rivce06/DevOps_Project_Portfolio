@@ -88,9 +88,10 @@ resource "aws_instance" "web" {
   user_data = <<-EOF
               #!/bin/bash
               yum update -y
-              amazon-linux-extras install docker -y
-              service docker start
-              usermod -a -G docker ec2-user
+              amazon-linux-extras enable docker
+              amazon-linux-extras install -y docker
+              systemctl enable docker
+              systemctl start docker
               docker run -d -p 80:80 ${var.docker_image}
               EOF
 
