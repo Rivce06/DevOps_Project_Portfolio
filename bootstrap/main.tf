@@ -4,7 +4,8 @@ provider "aws" {
 
 # S3 Bucket for Terraform state
 resource "aws_s3_bucket" "tf_state" {
-  bucket = var.my_state_bucket
+  bucket        = var.my_state_bucket
+  force_destroy = true
 
   tags = {
     Name = "Terraform State Bucket"
