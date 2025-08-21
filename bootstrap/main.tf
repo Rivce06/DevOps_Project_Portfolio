@@ -3,11 +3,6 @@ provider "aws" {
 }
 
 # s3 bucket to save the remote state
-resource "aws_s3_bucket" "tf_state" {
-  bucket = var.my_state_bucket
-  force_destroy = true
-}
-
 resource "aws_s3_bucket_server_side_encryption_configuration" "encryption" {
   bucket = aws_s3_bucket.tf_state.id
 
@@ -16,7 +11,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "encryption" {
       sse_algorithm = "AES256"
     }
   }
-}
+
   tags = {
     name = "terraform-state-bucket"
   }
