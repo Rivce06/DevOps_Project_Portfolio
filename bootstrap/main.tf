@@ -2,7 +2,25 @@ provider "aws" {
   region = var.region
 }
 
-# s3 bucket to save the remote state
+# S3 Bucket for Terraform state
+resource "aws_s3_bucket" "tf_state" {
+  bucket = var.my_state_bucket
+
+  tags = {
+    Name = "Terraform State Bucket"
+  }
+}
+
+# Enable versioning
+resource "aws_s3_bucket_versioning" "versioning" {
+  bucket = aws_s3_bucket.tf_state.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# Enable encryption
 resource "aws_s3_bucket_server_side_encryption_configuration" "encryption" {
   bucket = aws_s3_bucket.tf_state.id
 
@@ -10,10 +28,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "encryption" {
     apply_server_side_encryption_by_default {
       sse_algorithm = "AES256"
     }
-  }
-
-  tags = {
-    name = "terraform-state-bucket"
   }
 }
 
@@ -27,7 +41,9 @@ resource "aws_dynamodb_table" "tf_lock" {
     name = "LockID"
     type = "S"
   }
+
   tags = {
-    name = "terraform-lock-table"
+    Name = "terraform-lock-table"
   }
 }
+
