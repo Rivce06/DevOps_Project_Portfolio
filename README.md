@@ -5,7 +5,7 @@
 
 # 🧰 DevOps Project Portfolio
 
-Welcome to my DevOps Project Portfolio — a collection of real-world, cloud-based projects that demonstrate my skills learning journey in infrastructure automation, CI/CD, containerization, cloud services, and monitoring. Each project follows best practices for scalability, security, and maintainability using modern DevOps tools and techniques.
+Welcome to my DevOps Project Portfolio — a collection of real-world, cloud-based projects that demonstrate my skills in infrastructure automation, CI/CD, containerization, cloud services, and monitoring. Each project follows best practices for scalability, security, and maintainability using modern DevOps tools and techniques.
 
 ---
 ### 📁 Repository Structure
