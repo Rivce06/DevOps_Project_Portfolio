@@ -72,6 +72,9 @@ cd bootstrap
 terraform init
 ```
 ```
+terraform plan
+```
+```
 terraform apply
 ```
 
