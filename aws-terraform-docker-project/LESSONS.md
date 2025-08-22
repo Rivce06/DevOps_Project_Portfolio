@@ -156,4 +156,3 @@ Finally, I checked my AWS account manually to confirm that no services or resour
 - **Why this matters**: Verifying that the remote state is being stored correctly and manually auditing your cloud environment after destruction is a best practice. It ensures your automation is working as intended and helps prevent unexpected billing due to orphaned resources.
 
 ---
-```
