@@ -1,10 +1,29 @@
-# 🚀 Terraform AWS Dockerized NGINX Project
+ # 🚀 Terraform AWS Dockerized NGINX Project
 
-This project automates the provisioning of a simple AWS infrastructure using Terraform, and manages deployments using GitHub Actions CI/CD. The infrastructure includes an EC2 instance running a Dockerized NGINX container, inside a custom VPC with networking components. It uses remote state management with S3 and DynamoDB for team-safe workflows.
+This project was born as a hands-on exercise to practice Infrastructure as Code (IaC) and CI/CD automation.
 
----
+The goal: **provision AWS infrastructure with Terraform, deploy a Dockerized NGINX web server on EC2, and fully automate it through GitHub Actions.**
 
-📂 Project Structure
+It evolved into more than just a deployment — it became a journey of solving real-world problems with state management, pipelines, and automation.
+
+## 🗺️ Final Architecture
+
+**Custom VPC** with subnet, route table, and internet gateway
+
+**Security group** allowing SSH + HTTP
+
+**EC2 instance** running Dockerized NGINX
+
+**Terraform remote backend** with S3 + DynamoDB
+
+**GitHub Actions pipeline** for CI/CD automation
+
+## 🗺️ Architecture Diagram
+
+<img src="https://github.com/Rivce06/Bucket/blob/main/Diagrams/Untitled%20Diagram.drawio.png" />
+
+
+## 📂 Project Structure
 ```
 DevOps_Project_Portfolio/
 ├── .github/workflows/           # GitHub Actions CI/CD for Terraform
@@ -14,225 +33,49 @@ DevOps_Project_Portfolio/
 │   ├── main.tf
 │   ├── variables.tf
 │   ├── outputs.tf
-│   └── README.md                # This file
+│   └── README.md
 ├── bootstrap/                   # Terraform bootstrap (S3 + DynamoDB)
 │   ├── main.tf
 │   ├── variables.tf
 │   └── outputs.tf
 ├── .gitignore
-└── README.md                    
+└── README.md
 ```
-## 🧱 What This Project Does
+## ⚙️ How to Use
+### 1. Bootstrap Terraform Backend
 
-### Bootstraps Terraform state management:
-
-- Creates an S3 bucket to store Terraform .tfstate files
-
-- Creates a DynamoDB table for state locking
-
-### Provisions AWS infrastructure:
-
-- A custom VPC
-
-- Subnet, Internet Gateway, Route Table
-
-- Security Group (SSH + HTTP)
-
-- EC2 Instance with Docker + NGINX
-
-### Automates deployments using GitHub Actions:
-
-#### On push to main, runs:
-
-`terraform fmt`
-
-`terraform init`
-
-`terraform validate`
-
-`terraform plan`
-
-`terraform apply`
-
----
-
-🗺️ Architecture Diagram
-
-<a href="https://github.com/Rivce06/Bucket/blob/main/Diagrams/Untitled%20Diagram.drawio"> 
-  <img src="https://github.com/Rivce06/Bucket/blob/main/Diagrams/Untitled%20Diagram.drawio.png" />
-</a>
-
-
-## ⚙️ Step-by-Step Usage
-### 1. 🏗️ Bootstrap the Terraform Backend
-
-Before deploying the infrastructure, we need a place to store the remote state.
+Create the S3 bucket and DynamoDB table to store state:
 ```
 cd bootstrap
-```
-```
 terraform init
-```
-```
 terraform plan
-```
-```
 terraform apply
 ```
+### 2. Deploy Main Infrastructure with GitHub Actions
 
+Push to `main` branch → triggers CI/CD pipeline.
 
-### This will:
+Pipeline runs: `terraform fmt`, `init`, `validate`, `plan`, `apply`.
 
-- Create an S3 bucket (e.g., andresr-devops-20250821)
+Secrets required in GitHub repo:
 
-- Create a DynamoDB table (e.g., terraform-locks)
+`AWS_ACCESS_KEY_ID`
 
-#### These values should match your backend.tf configuration in the main project.
+`AWS_SECRET_ACCESS_KEY`
 
----
-### 2. 🚀 Deploy Main Infrastructure with GitHub Actions CI/CD
+Result:
 
-Every time you `push` to **main**, GitHub Actions will:
+AWS VPC, subnet, route table, security group.
 
-- Checkout the code
+EC2 instance running Dockerized NGINX.
 
-- Set up Terraform
+### 3. Access the Application
 
-- Format check (`terraform fmt`)
+Visit the EC2 public IP over `http://` to see the NGINX default page.
 
-`Initialize`, `validate`, and `plan`
+## 🐳 What’s Running on EC2
 
-- Apply changes to AWS
-
-#### Workflow file: .github/workflows/terraform.yaml
-```
-on:
-  push:
-    branches: [ main ]
-```
-
-Make sure you’ve set these repository secrets in GitHub:
-
-AWS_ACCESS_KEY_ID
-
-AWS_SECRET_ACCESS_KEY
-
-#### Once the action is executed it will deploy:
-
-- A VPC and public subnet
-
-- An Internet Gateway
-
-- A Route Table
-
-- An EC2 instance running Dockerized NGINX
-
----
-### 🐳 What’s Running on EC2?
-
-Your EC2 instance runs a simple NGINX web server inside a Docker container. The user_data script installs Docker and launches the container automatically:
-```
-docker run -d -p 80:80 nginx
-```
-
-Accessible via the EC2's `public IP`.
-
-### 🛠️ Technologies Used
-#### Tool	Purpose:
-
-- Terraform	Infrastructure as Code (IaC)
-
-- AWS EC2	Host for NGINX container
-
-- AWS S3	Remote backend for tfstate
-
-- AWS DynamoDB	State lock management
-
-- Docker	Containerization
-
-- GitHub Actions	CI/CD pipeline for automation
-
----
-
-# 📘 Lessons Learned
-
-## 🛠️ Problem 1: GitHub Actions workflow was not running
-
- - **Why it happened**: I had placed the `.github/workflows` directory (which contains GitHub Actions `.yml` files) inside a subfolder instead of the root of the repository. GitHub requires this folder to be at the root level in order to detect and run workflows.
-
-- **Steps I took to fix it**: I reviewed the expected structure for GitHub Actions, compared it with working examples, and confirmed that the folder was misplaced.
-
-- **How I resolved it**: I moved the `.github/workflows/` directory to the root of the repository, committed the changes, and the pipeline started executing as expected.
-
-- **Why this matters**: If GitHub can’t detect your workflow, your entire CI/CD automation fails silently. Making sure your project follows the expected directory structure is essential to avoid confusion and delays.
-
----
-
-## 🛠️ Problem 2: terraform fmt was consistently failing in the pipeline
-
-- **Why it happened**: I assumed `terraform fmt` would auto-format the code and pass in the pipeline, but the pipeline failed because the `.tf` files were improperly formatted. There was also a reference to a non-existent `terraform.yml` file.
-
-- **Steps I took to fix it**: I reviewed the pipeline logs, manually ran `terraform fmt -check -recursive` locally, and inspected the affected files.
-
-- **How I resolved it**: I applied the fixes locally, added and committed the changes, then re-ran the pipeline. This time, the format check passed.
-
-- **Why this matters**: Misformatted files can break automation and create inconsistencies. Keeping clean formatting not only ensures pipelines succeed but also improves readability and collaboration.
-
----
-
-## 🛠️ Problem 3: Terraform referenced an undeclared resource
-
-- **Why it happened**: In my `main.tf`, I referenced `aws_security_group.allow_ssh_http.id`, but never actually declared that security group.
-
-- **Steps I took to fix it**: I reviewed the error message, located the line causing the issue, and confirmed the missing resource.
-
-- **How I resolved it**: I added the following resource to my Terraform configuration:
-
-```
-resource "aws_security_group" "allow_ssh_http" {
-  name        = "allow_ssh_http"
-  description = "Allow SSH and HTTP inbound traffic"
-  vpc_id      = aws_vpc.main.id
-
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "allow_ssh_http"
-  }
-}
-```
-- **Why this matters**: Terraform requires all referenced resources to be declared. This issue taught me to always validate the full dependency graph and run terraform validate to catch these errors early.
-
----
-## 🛠️ Problem 4: Docker didn’t start on the EC2 instance
-
-- **Why it happened**: The AMI (Amazon Linux 2) installs Docker using `amazon-linux-extras install`, but doesn’t enable or start the service by default. Also, u`sermod -a -G docker ec2-user` doesn't apply until after a session restart.
-
-- **Steps I took to fix it**: I researched how Amazon Linux handles Docker and how user_data scripts execute.
-
-- **How I resolved it**: I replaced my `user_data script `with the following:
-
+The EC2 instance automatically installs Docker and starts NGINX:
 ```
 #!/bin/bash
 yum update -y
@@ -242,74 +85,71 @@ systemctl enable docker
 systemctl start docker
 docker run -d -p 80:80 nginx
 ```
-
-- **Why this matters**: If Docker doesn't start properly, the container never runs and there’s no clear indication of failure unless you log in and check. This taught me the importance of verifying service readiness in automation scripts.
-
 ---
 
-## 🛠️ Problem 5: Couldn’t destroy infrastructure with terraform destroy
+## 📘 Key Lessons Learned
 
-- **Why it happened**: The `terraform.tfstate` file was stored locally in a GitHub Actions ephemeral runner. Once the runner finished, the state file was lost, so Terraform no longer had knowledge of the deployed infrastructure.
+Throughout this project, I encountered multiple real-world problems. Here are the **top three learnings** that shaped the project:
 
-- **Steps I took to fix it**: I researched how to store state remotely and securely. I found that S3 combined with DynamoDB locking was a recommended practice.
+**1. Remote State Management Matters**
 
-- **How I resolved it**: I configured a remote backend in S3 and added a DynamoDB table for state locking to prevent conflicts between executions.
+- **Problem**: Terraform `destroy` failed because GitHub Actions runners are ephemeral and the local state was lost.
 
-- **Why this matters**: Losing your state file means Terraform has no idea what’s been deployed, which can lead to orphaned infrastructure and unexpected AWS charges. This experience emphasized the need for persistent, shared backend storage.
+- **Solution**: Configured S3 for remote state storage with DynamoDB for locking.
 
----
-## 🛠️ Problem 6: GitHub rejected a file larger than 100MB
+- **Why it matters**: Without persistent state, Terraform cannot track resources, leading to orphaned infrastructure and unexpected AWS charges.
 
-- **Why it happened**: A large binary file from the `.terraform` directory was accidentally committed. GitHub doesn't allow files larger than `100MB` in regular repositories.
+**2. CI/CD Structure is Critical**
 
-- **Steps I took to fix it**: I removed the file with `git rm`, added it to `.gitignore`, but the push still failed due to the file’s presence in commit history. I had to fully remove it from the Git history.
+- **Problem**: GitHub Actions didn’t run because workflows weren’t in the correct directory.
 
-- **How I resolved it**: I installed `git-filter-repo` and ran:
+- **Solution**: Moved `.github/workflows/` to repo root.
 
-```
-git filter-repo --force \
-  --path bootstrap/.terraform/providers/.../terraform-provider-aws_v6.9.0_x5 \
-  --invert-paths
-```
-Then, I reconfigured the remote and pushed with force:
-```
-git push --set-upstream origin main --force
-```
-- **Why this matters**: Binary files in Git history can completely block collaboration or CI/CD. It’s crucial to avoid committing auto-generated or provider files and always use `.gitignore` effectively.
+- **Why it matters**: Small structural mistakes can silently break automation.
 
----
-## 🛠️ Problem 7: GitHub Codespaces secrets weren’t available
+- **3. Automation Must Verify Service Readiness**
 
-- **Why it happened**: I added the secrets after the Codespace was already running, and they don’t auto-update in existing environments.
+- **Problem**: Docker didn’t start correctly on EC2, so NGINX never launched.
 
-- **Steps I took to fix it**: I read GitHub’s Codespaces documentation and found that secrets are injected only on startup.
+- **Solution**: Updated user_data script to enable/start Docker before running the container.
 
-- **How I resolved it**: I manually stopped and restarted the Codespace. Once restarted, the secrets were available as environment variables (e.g. `$AWS_ACCESS_KEY_ID`).
+- **Why it matters**: Automation scripts must ensure services are running before moving on, otherwise failures remain hidden until manual checks.
 
-- **Why this matters**: Misconfigured or missing secrets can block Terraform and CLI tools from working. This helped me understand how GitHub Codespaces handles secrets lifecycle.
+👉 For a complete breakdown of all challenges (formatting issues, misreferenced resources, large files, HTTPS confusion, Codespaces secrets, etc.), see <a href="https://github.com/Rivce06/DevOps_Project_Portfolio/blob/main/aws-terraform-docker-project/LESSONS.md">🔗 LESSONS.md</a>
 
 ---
-## 🛠️ Problem 8: NGINX page wasn't loading
+## ✅ Final Validation
 
-- **Why it happened**: I mistakenly tried to access the server using `https://`, but the NGINX container was only serving traffic via HTTP.
+- Verified that Terraform state was stored in S3 with DynamoDB lock.
 
-- **Steps I took to fix it**: I tested using `curl http://<public-ip> `and got a valid response, confirming the server was running.
+- Triggered `terraform destroy` through GitHub Actions.
 
-- **How I resolved it**: I switched from `https://` to `http://` in the browser and the page loaded correctly.
+- Manually audited AWS account to confirm no resources left running.
 
-- **Why this matters**: This is a small but common mistake that can waste time. Verifying service accessibility with tools like `curl` can quickly isolate issues from infrastructure vs. user error.
+This confirmed that the workflow works end-to-end and safely cleans up resources.
 
----
+## 🛠️ Technologies Used
 
-## ✅ Final Validation & Cleanup
+**Terraform** → IaC for AWS
 
-Once everything was working as expected, I verified that the `terraform.tfstate` file was correctly stored in my AWS S3 bucket.
+**AWS (EC2, VPC, S3, DynamoDB)** → compute, networking, state backend
 
-I then triggered the `destroy` GitHub Action manually to tear down the infrastructure.
+**Docker** → containerized NGINX web server
 
-Finally, I checked my AWS account manually to confirm that no services or resources remained active, in order to avoid unnecessary charges.
+**GitHub Actions** → CI/CD automation
 
-- **Why this matters**: Verifying that the remote state is being stored correctly and manually auditing your cloud environment after destruction is a best practice. It ensures your automation is working as intended and helps prevent unexpected billing due to orphaned resources.
+## 💡 Reflection
+
+This project was more than spinning up an NGINX container.
+It taught me:
+
+- **Why remote state management is non-negotiable in Terraform.**
+
+- **How CI/CD pipelines depend on correct repo structure and formatting.**
+
+- **How small oversights (service readiness, HTTPS vs HTTP) can cause big delays.**
+
+Most importantly: **documenting problems and solutions was as valuable as writing the code itself.**
 
 ---
 ```
