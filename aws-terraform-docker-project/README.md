@@ -58,7 +58,9 @@ DevOps_Project_Portfolio/
 
 🗺️ Architecture Diagram
 
----
+<a href="https://github.com/Rivce06/Bucket/blob/main/Diagrams/Untitled%20Diagram.drawio"> 
+  <img src="https://github.com/Rivce06/Bucket/blob/main/Diagrams/Untitled%20Diagram.drawio.png" />
+</a>
 
 
 ## ⚙️ Step-by-Step Usage
