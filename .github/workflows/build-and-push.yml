@@ -27,7 +27,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker image
-        working-directory: docker/nginx
+        working-directory: monitoring-project/docker/nginx
         run: |
           IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/custom-nginx
           docker build -t $IMAGE_NAME:latest .
