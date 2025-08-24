@@ -12,6 +12,9 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TFSTATE_BUCKET: ${{ secrets.TFSTATE_BUCKET }}
+      TFSTATE_KEY: ${{ secrets.TFSTATE_KEY }}
 
     steps:
       # 1️⃣ Checkout repo
@@ -24,19 +27,23 @@ jobs:
         with:
           terraform_version: 1.8.5
 
-      # 3️⃣ Get EC2 public IP from Terraform
-      - name: Get EC2 public IP
+       # 8️⃣ Get EC2 public IP directly from tfstate in S3
+      - name: Get EC2 IP from tfstate in S3
+        id: ec2ip
         run: |
-         cd monitoring-project/infra
-         terraform init -input=false
-         IP=$(terraform output -raw instance_public_ip | xargs)
-         if [[ -z "$IP" ]]; then
-          echo "❌ No se pudo obtener la IP de EC2"
-          exit 1
-         fi
-         echo "EC2_IP=$IP" >> $GITHUB_ENV   # ✅ exportamos correctamente
+          aws s3 cp s3://$TFSTATE_BUCKET/$TFSTATE_KEY terraform.tfstate --region $AWS_REGION
+          IP=$(jq -r '.resources[] 
+              | select(.type=="aws_instance" and .name=="nginx_server") 
+              | .instances[0].attributes.public_ip' terraform.tfstate)
+          IP=$(echo $IP | xargs)
+          if [[ -z "$IP" ]]; then
+            echo "❌ No se pudo obtener la IP de EC2 desde tfstate"
+            exit 1
+          fi
+          echo "✅ EC2 IP: $IP"
+          echo "EC2_IP=$IP" >> $GITHUB_ENV
 
-      # 4️⃣ Debug EC2 IP (opcional, útil para confirmar)
+      # 9️⃣ Debug EC2 IP
       - name: Debug EC2 IP
         run: echo "EC2_IP=$EC2_IP"
 
@@ -87,10 +94,11 @@ jobs:
          echo "$PRIVATE_KEY" >> $GITHUB_ENV
          echo "EOF" >> $GITHUB_ENV
 
+      # 🔟 Deploy stack on EC2
       - name: Deploy stack on EC2
         uses: appleboy/ssh-action@v0.1.6
         with:
-          host: ${{ env.EC2_IP }}   
+          host: ${{ env.EC2_IP }}
           username: ec2-user
           key: ${{ env.PRIVATE_KEY }}
           script: |
@@ -98,4 +106,3 @@ jobs:
             git pull origin main
             docker-compose pull
             docker-compose up -d --remove-orphans
-
