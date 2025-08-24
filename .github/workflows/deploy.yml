@@ -82,27 +82,24 @@ jobs:
           docker build -t $IMAGE_NAME:latest .
           docker push $IMAGE_NAME:latest
 
-      # 🔟 Retrieve SSH key from SSM and set as output
+      # 🔟 Retrieve SSH key from SSM and save as file
       - name: Retrieve SSH key from SSM
-        id: ssmkey
         run: |
           aws ssm get-parameter \
             --name "/ssh/monitoring-project" \
             --with-decryption \
             --query "Parameter.Value" \
             --output text \
-            --region us-east-1 > monitoring-project.pem
+            --region $AWS_REGION > monitoring-project.pem
           chmod 600 monitoring-project.pem
-          # exportar el contenido como output
-          echo "::set-output name=key::$(cat monitoring-project.pem)"
 
-      # 1️⃣1️⃣ Deploy stack on EC2 using SSH key content
+      # 1️⃣1️⃣ Deploy stack on EC2 using SSH key file
       - name: Deploy stack on EC2
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ env.EC2_IP }}
           username: ec2-user
-          key: ${{ steps.ssmkey.outputs.key }}
+          key_path: monitoring-project.pem
           script: |
             cd /opt/monitoring/monitoring-project
             git pull origin main
