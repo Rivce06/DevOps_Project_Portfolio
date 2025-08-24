@@ -27,16 +27,14 @@ jobs:
       # 3️⃣ Get EC2 public IP from Terraform
       - name: Get EC2 public IP
         run: |
-          cd monitoring-project/infra
-          terraform init -input=false
-          IP=$(terraform output -raw instance_public_ip | xargs)
-          if [[ -z "$IP" ]]; then
-            echo "❌ No se pudo obtener la IP de EC2"
-            exit 1
-          fi
-          echo "✅ EC2 IP: $IP"
-          # Guardar en GITHUB_ENV para que los siguientes steps la usen
-          echo "EC2_IP=$IP" >> $GITHUB_ENV
+         cd monitoring-project/infra
+         terraform init -input=false
+         IP=$(terraform output -raw instance_public_ip | xargs)
+         if [[ -z "$IP" ]]; then
+          echo "❌ No se pudo obtener la IP de EC2"
+          exit 1
+         fi
+         echo "EC2_IP=$IP" >> $GITHUB_ENV   # ✅ exportamos correctamente
 
       # 4️⃣ Debug EC2 IP (opcional, útil para confirmar)
       - name: Debug EC2 IP
@@ -92,7 +90,7 @@ jobs:
       - name: Deploy stack on EC2
         uses: appleboy/ssh-action@v0.1.6
         with:
-          host: ${{ env.EC2_IP }}
+          host: ${{ env.EC2_IP }}   
           username: ec2-user
           key: ${{ env.PRIVATE_KEY }}
           script: |
