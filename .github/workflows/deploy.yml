@@ -19,42 +19,37 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      # 2️⃣ Set up Terraform
+      # 2️⃣ Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.8.5
 
-      # 3️⃣ Init Terraform y obtener IP EC2
       - name: Get EC2 public IP from Terraform
         id: ec2
         run: |
           cd monitoring-project/infra
           terraform init -input=false
-          terraform plan -out=tfplan
-          IP=$(terraform output -raw instance_public_ip | xargs)
-          if [ -z "$IP" ]; then
+          IP=$(terraform output -raw instance_public_ip)
+          IP=$(echo $IP | tr -d '\n' | tr -d '\r')
+           if [[ -z "$IP" ]]; then
             echo "❌ No se pudo obtener la IP de EC2"
             exit 1
-          fi
+            fi
           echo "✅ EC2 IP: $IP"
           echo "EC2_IP=$IP" >> $GITHUB_ENV
+          echo "EC2_IP=$IP"  # ya no uses set-output
 
-      # 4️⃣ Set up Python y generar index.html
+      # 3️⃣ Set up Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.13.7'
 
+      # 4️⃣ Generate index.html
       - name: Generate index.html
         working-directory: monitoring-project/docker/nginx
-        run: |
-          python generate_index.py
-          if [ ! -f index.html ]; then
-            echo "❌ index.html no fue generado"
-            exit 1
-          fi
-          echo "✅ index.html generado correctamente"
+        run: python generate_index.py
 
       # 5️⃣ Log in DockerHub
       - name: Log in DockerHub
@@ -81,7 +76,6 @@ jobs:
 
       # 8️⃣ Deploy stack on EC2
       - name: Deploy stack on EC2
-        if: ${{ env.EC2_IP != '' }}
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ env.EC2_IP }}
