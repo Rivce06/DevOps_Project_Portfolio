@@ -1,0 +1,58 @@
+name: SSH Test
+on:
+  workflow_dispatch:
+
+jobs:
+  ssh-test:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TFSTATE_BUCKET: ${{ secrets.TFSTATE_BUCKET }}
+      TFSTATE_KEY: ${{ secrets.TFSTATE_KEY }}
+
+    steps:
+      # 1️⃣ Checkout repo (opcional, solo si quieres usar git)
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      # 2️⃣ Get EC2 public IP from tfstate in S3
+      - name: Get EC2 IP
+        id: ec2ip
+        run: |
+          aws s3 cp s3://$TFSTATE_BUCKET/$TFSTATE_KEY terraform.tfstate --region $AWS_REGION
+          IP=$(jq -r '.resources[] | select(.type=="aws_instance" and .name=="nginx_server") | .instances[0].attributes.public_ip' terraform.tfstate)
+          IP=$(echo $IP | xargs)
+          if [[ -z "$IP" ]]; then
+            echo "❌ No se pudo obtener la IP de EC2 desde tfstate"
+            exit 1
+          fi
+          echo "✅ EC2 IP: $IP"
+          echo "EC2_IP=$IP" >> $GITHUB_ENV
+
+      # 3️⃣ Debug EC2 IP
+      - name: Debug EC2 IP
+        run: echo "EC2_IP=$EC2_IP"
+
+      # 4️⃣ Retrieve SSH key from SSM
+      - name: Retrieve SSH key
+        run: |
+          mkdir -p ~/.ssh
+          aws ssm get-parameter \
+            --name "/ssh/monitoring-project" \
+            --with-decryption \
+            --query "Parameter.Value" \
+            --output text \
+            --region $AWS_REGION > ~/.ssh/monitoring-project.pem
+          chmod 600 ~/.ssh/monitoring-project.pem
+          echo "✅ SSH key retrieved"
+
+      # 5️⃣ Test SSH connection
+      - name: Test SSH
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ env.EC2_IP }}
+          username: ec2-user
+          key_path: ~/.ssh/monitoring-project.pem
+          script: |
+            echo "✅ SSH connection successful!"
+            hostname
