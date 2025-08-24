@@ -29,8 +29,7 @@ jobs:
         run: |
           cd monitoring-project/infra
           terraform init -input=false
-          IP=$(terraform output -raw instance_public_ip 2>/dev/null)
-          IP=$(echo $IP | tr -d '\n' | tr -d '\r')
+          IP=$(terraform output -raw instance_public_ip | xargs)
           if [[ -z "$IP" ]]; then
             echo "❌ No se pudo obtener la IP de EC2"
             exit 1
