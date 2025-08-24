@@ -128,7 +128,6 @@ resource "aws_instance" "nginx_server" {
   associate_public_ip_address = true
 
   key_name = aws_key_pair.generated_key.key_name
-
   user_data = <<-EOF
               #!/bin/bash
               # Actualizar el sistema
@@ -140,25 +139,30 @@ resource "aws_instance" "nginx_server" {
               systemctl enable docker
               systemctl start docker
 
+              # Agregar ec2-user al grupo docker
+              usermod -aG docker ec2-user
+
               # Instalar Docker Compose
               curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
               chmod +x /usr/local/bin/docker-compose
+              ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 
-             # Instalar Git para clonar repos
-             yum install -y git
+              # Instalar Git
+              yum install -y git
 
-             # Crear carpeta para tu proyecto
-             mkdir -p /opt/monitoring
-             cd /opt/monitoring
-
-              # Clonar tu repo (si no existe)
-              if [ ! -d "/opt/monitoring/.git" ]; then
+              # Clonar proyecto
+              mkdir -p /opt/monitoring
+              cd /opt/monitoring
+              if [ ! -d ".git" ]; then
                 git clone https://github.com/Rivce06/DevOps_Project_Portfolio.git .
               fi
 
-              # Iniciar stack (si docker-compose.yml ya existe)
-              docker-compose pull
-              docker-compose up -d
+              # Dar permisos a ec2-user
+              chown -R ec2-user:ec2-user /opt/monitoring
+
+              # Levantar stack (solo para probar, el pipeline luego hará pull/update)
+              docker-compose pull || true
+              docker-compose up -d || true
               EOF
 
   tags = {
