@@ -19,46 +19,51 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      # 2️⃣ Terraform
+      # 2️⃣ Set up Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.8.5
 
-      - name: Get EC2 public IP from Terraform
+      # 3️⃣ Get EC2 public IP from Terraform
+      - name: Get EC2 public IP
         id: ec2
         run: |
           cd monitoring-project/infra
           terraform init -input=false
-          IP=$(terraform output -raw instance_public_ip)
+          IP=$(terraform output -raw instance_public_ip 2>/dev/null)
           IP=$(echo $IP | tr -d '\n' | tr -d '\r')
-           if [[ -z "$IP" ]]; then
+          if [[ -z "$IP" ]]; then
             echo "❌ No se pudo obtener la IP de EC2"
             exit 1
-            fi
+          fi
           echo "✅ EC2 IP: $IP"
+          # Guardar en GITHUB_ENV para usarlo en el SSH step
           echo "EC2_IP=$IP" >> $GITHUB_ENV
-          echo "EC2_IP=$IP"  # ya no uses set-output
 
-      # 3️⃣ Set up Python
+      # 4️⃣ Debug EC2 IP (opcional, útil para confirmar)
+      - name: Debug EC2 IP
+        run: echo "EC2_IP=$EC2_IP"
+
+      # 5️⃣ Set up Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.13.7'
 
-      # 4️⃣ Generate index.html
+      # 6️⃣ Generate index.html
       - name: Generate index.html
         working-directory: monitoring-project/docker/nginx
         run: python generate_index.py
 
-      # 5️⃣ Log in DockerHub
+      # 7️⃣ Log in DockerHub
       - name: Log in DockerHub
         uses: docker/login-action@v2
         with:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ env.DOCKERHUB_TOKEN }}
 
-      # 6️⃣ Build & push NGINX
+      # 8️⃣ Build & push NGINX
       - name: Build & push NGINX
         working-directory: monitoring-project/docker/nginx
         run: |
@@ -66,7 +71,7 @@ jobs:
           docker build -t $IMAGE_NAME:latest .
           docker push $IMAGE_NAME:latest
 
-      # 7️⃣ Build & push Flask app
+      # 9️⃣ Build & push Flask app
       - name: Build & push Flask app
         working-directory: monitoring-project/app
         run: |
@@ -74,7 +79,7 @@ jobs:
           docker build -t $IMAGE_NAME:latest .
           docker push $IMAGE_NAME:latest
 
-      # 8️⃣ Deploy stack on EC2
+      # 🔟 Deploy stack on EC2
       - name: Deploy stack on EC2
         uses: appleboy/ssh-action@v0.1.6
         with:
