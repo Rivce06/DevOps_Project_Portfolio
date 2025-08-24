@@ -1,29 +1,32 @@
-name: SSH Test
+name: CI/CD Deploy
+
 on:
   workflow_dispatch:
 
 jobs:
-  ssh-test:
+  deploy:
     runs-on: ubuntu-latest
     env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION: ${{ secrets.AWS_REGION }}
       TFSTATE_BUCKET: ${{ secrets.TFSTATE_BUCKET }}
       TFSTATE_KEY: ${{ secrets.TFSTATE_KEY }}
 
     steps:
-      # 1️⃣ Checkout repo (opcional, solo si quieres usar git)
+      # 1️⃣ Checkout repo
       - name: Checkout repo
         uses: actions/checkout@v3
 
-    # 2️⃣ Configurar AWS CLI con las credenciales del repo
+      # 2️⃣ Set up AWS CLI
       - name: Configure AWS CLI
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # 2️⃣ Get EC2 public IP from tfstate in S3
+      # 3️⃣ Get EC2 IP from S3 tfstate
       - name: Get EC2 IP
         id: ec2ip
         run: |
@@ -37,12 +40,8 @@ jobs:
           echo "✅ EC2 IP: $IP"
           echo "EC2_IP=$IP" >> $GITHUB_ENV
 
-      # 3️⃣ Debug EC2 IP
-      - name: Debug EC2 IP
-        run: echo "EC2_IP=$EC2_IP"
-
       # 4️⃣ Retrieve SSH key from SSM
-      - name: Retrieve SSH key
+      - name: Retrieve SSH key from SSM
         run: |
           mkdir -p ~/.ssh
           aws ssm get-parameter \
@@ -50,17 +49,23 @@ jobs:
             --with-decryption \
             --query "Parameter.Value" \
             --output text \
-            --region $AWS_REGION > ~/.ssh/monitoring-project.pem
+            --region $AWS_REGION \
+            > ~/.ssh/monitoring-project.pem
           chmod 600 ~/.ssh/monitoring-project.pem
-          echo "✅ SSH key retrieved"
+          
+      # 5️⃣ Debug EC2 IP (opcional)
+      - name: Debug EC2 IP
+        run: echo "EC2_IP=$EC2_IP"
 
-      # 5️⃣ Test SSH connection
-      - name: Test SSH
+      # 6️⃣ Deploy via SSH
+      - name: Deploy stack on EC2
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ env.EC2_IP }}
           username: ec2-user
           key_path: ~/.ssh/monitoring-project.pem
           script: |
-            echo "✅ SSH connection successful!"
-            hostname
+            cd /opt/monitoring/monitoring-project
+            git pull origin main
+            docker-compose pull
+            docker-compose up -d --remove-orphans
