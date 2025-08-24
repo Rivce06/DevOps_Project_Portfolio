@@ -78,6 +78,48 @@ resource "aws_security_group" "allow_ssh_http" {
   }
 }
 
+# Obtener datos de la cuenta actual
+data "aws_caller_identity" "current" {}
+
+# Crear key pair (con clave generada localmente)
+resource "tls_private_key" "ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "generated_key" {
+  key_name   = "monitoring-project-key"
+  public_key = tls_private_key.ssh_key.public_key_openssh
+}
+
+# Guardar la clave privada en AWS SSM Parameter Store (encriptada con KMS por defecto)
+resource "aws_ssm_parameter" "private_key" {
+  name        = "/ssh/monitoring-project"
+  type        = "SecureString"
+  value       = tls_private_key.ssh_key.private_key_pem
+}
+
+# Ejemplo de policy para dar acceso solo a ese parámetro
+resource "aws_iam_policy" "ssm_policy" {
+  name        = "SSMGetParameterMonitoring"
+  description = "Allow access to monitoring-project SSH private key in SSM"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = [
+          "ssm:GetParameter",
+          "ssm:GetParameters"
+        ]
+        Resource = "arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter/ssh/monitoring-project"
+      }
+    ]
+  })
+}
+
+
 resource "aws_instance" "nginx_server" {
   ami                         = "ami-0c2b8ca1dad447f8a"
   instance_type               = var.instance_type
