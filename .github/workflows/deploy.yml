@@ -102,6 +102,13 @@ jobs:
           key_path: monitoring-project.pem
           script: |
             cd /opt/monitoring/monitoring-project
+
+            # Evita el warning de "dubious ownership"
+            git config --global --add safe.directory /opt/monitoring
+
+            # Actualiza el repo
             git pull origin main
-            docker-compose pull
-            docker-compose up -d --remove-orphans
+
+            # Evita error de permisos con Docker
+            sudo docker-compose pull
+            sudo docker-compose up -d --remove-orphans
