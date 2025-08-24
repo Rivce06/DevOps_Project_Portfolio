@@ -27,7 +27,6 @@ jobs:
 
       # 3️⃣ Get EC2 public IP from Terraform
       - name: Get EC2 public IP
-        id: ec2
         run: |
           cd monitoring-project/infra
           terraform init -input=false
@@ -38,7 +37,7 @@ jobs:
             exit 1
           fi
           echo "✅ EC2 IP: $IP"
-          # Guardar en GITHUB_ENV para usarlo en el SSH step
+          # Guardar en GITHUB_ENV para que los siguientes steps la usen
           echo "EC2_IP=$IP" >> $GITHUB_ENV
 
       # 4️⃣ Debug EC2 IP (opcional, útil para confirmar)
@@ -91,3 +90,4 @@ jobs:
             git pull origin main
             docker-compose pull
             docker-compose up -d --remove-orphans
+
