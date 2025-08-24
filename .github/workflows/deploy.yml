@@ -12,7 +12,6 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-      EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
 
     steps:
       # 1️⃣ Checkout repo
@@ -78,13 +77,24 @@ jobs:
           docker build -t $IMAGE_NAME:latest .
           docker push $IMAGE_NAME:latest
 
-      # 🔟 Deploy stack on EC2
+      - name: Retrieve SSH key from SSM
+        id: ssmkey
+        run: |
+         PRIVATE_KEY=$(aws ssm get-parameter \
+          --name "/ssh/monitoring-project" \
+          --with-decryption \
+          --query "Parameter.Value" \
+          --output text)
+         echo "PRIVATE_KEY<<EOF" >> $GITHUB_ENV
+         echo "$PRIVATE_KEY" >> $GITHUB_ENV
+         echo "EOF" >> $GITHUB_ENV
+
       - name: Deploy stack on EC2
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ env.EC2_IP }}
           username: ec2-user
-          key: ${{ env.EC2_SSH_KEY }}
+          key: ${{ env.PRIVATE_KEY }}
           script: |
             cd /opt/monitoring/monitoring-project
             git pull origin main
