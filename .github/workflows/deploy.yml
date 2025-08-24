@@ -28,8 +28,8 @@ jobs:
         id: ec2
         run: |
           cd monitoring-project/infra
-          terraform init
-          IP=$(terraform output -raw instance_public_ip)
+          terraform init -input=false
+          IP=$(terraform output -raw instance_public_ip | tr -d '\n')
           echo "EC2_IP=$IP" >> $GITHUB_ENV
 
       - name: Check EC2 IP
