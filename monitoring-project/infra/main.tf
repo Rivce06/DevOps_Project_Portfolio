@@ -94,9 +94,9 @@ resource "aws_key_pair" "generated_key" {
 
 # Guardar la clave privada en AWS SSM Parameter Store (encriptada con KMS por defecto)
 resource "aws_ssm_parameter" "private_key" {
-  name        = "/ssh/monitoring-project"
-  type        = "SecureString"
-  value       = tls_private_key.ssh_key.private_key_pem
+  name  = "/ssh/monitoring-project"
+  type  = "SecureString"
+  value = tls_private_key.ssh_key.private_key_pem
 }
 
 # Ejemplo de policy para dar acceso solo a ese parámetro
@@ -108,8 +108,8 @@ resource "aws_iam_policy" "ssm_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = [
+        Effect = "Allow"
+        Action = [
           "ssm:GetParameter",
           "ssm:GetParameters"
         ]
