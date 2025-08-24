@@ -40,6 +40,16 @@ jobs:
           fi
 
       # 2️⃣ Ahora sí, Docker
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13.7'
+
+      - name: Generate index.html
+        working-directory: monitoring-project/docker/nginx
+        run: python generate_index.py
+
       - name: Log in DockerHub
         uses: docker/login-action@v2
         with:
