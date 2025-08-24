@@ -127,7 +127,7 @@ resource "aws_instance" "nginx_server" {
   vpc_security_group_ids      = [aws_security_group.allow_ssh_http.id]
   associate_public_ip_address = true
 
-  key_name = aws_key_pair.generated_key.key_name
+  key_name  = aws_key_pair.generated_key.key_name
   user_data = <<-EOF
               #!/bin/bash
               # Actualizar el sistema
