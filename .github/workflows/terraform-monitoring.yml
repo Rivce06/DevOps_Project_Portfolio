@@ -23,21 +23,21 @@ jobs:
 
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
-        working-directory: monitoring-project
+        working-directory: monitoring-project/infra
 
       - name: Terraform Init
         run: terraform init
-        working-directory: monitoring-project
+        working-directory: monitoring-project/infra
 
       - name: Terraform Validate
         run: terraform validate
-        working-directory: monitoring-project
+        working-directory: monitoring-project/infra
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan
-        working-directory: monitoring-project
+        working-directory: monitoring-project/infra
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve tfplan
-        working-directory: monitoring-project
+        working-directory: monitoring-project/infra
