@@ -35,7 +35,6 @@ jobs:
           IP=$(jq -r '.resources[] 
               | select(.type=="aws_instance" and .name=="nginx_server") 
               | .instances[0].attributes.public_ip' terraform.tfstate)
-          # limpiar espacios y saltos de línea invisibles
           IP=$(echo "$IP" | tr -d '\r\n ')
           if [[ -z "$IP" ]]; then
             echo "❌ No se pudo obtener la IP de EC2 desde tfstate"
@@ -93,7 +92,7 @@ jobs:
             --region $AWS_REGION > monitoring-project.pem
           chmod 600 monitoring-project.pem
 
-      # 1️⃣1️⃣ Deploy stack on EC2 using SSH key file
+      # 1️⃣1️⃣ Deploy stack on EC2
       - name: Deploy stack on EC2
         uses: appleboy/ssh-action@v0.1.6
         with:
@@ -101,14 +100,21 @@ jobs:
           username: ec2-user
           key_path: monitoring-project.pem
           script: |
+            export PATH=$PATH:/usr/local/bin:/usr/bin
+
+            if [ ! -d /opt/monitoring/monitoring-project ]; then
+              mkdir -p /opt/monitoring/monitoring-project
+              chown ec2-user:ec2-user /opt/monitoring/monitoring-project
+            fi
             cd /opt/monitoring/monitoring-project
 
-            # Evita warning de "dubious ownership"
             git config --global --add safe.directory /opt/monitoring
 
-            # Actualiza repo
+            if [ ! -d .git ]; then
+              git clone https://github.com/Rivce06/DevOps_Project_Portfolio.git .
+            fi
+
             git pull origin main
 
-            # Levanta Docker Compose (sin sudo)
             docker-compose pull
             docker-compose up -d --remove-orphans
