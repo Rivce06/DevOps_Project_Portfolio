@@ -103,12 +103,12 @@ jobs:
           script: |
             cd /opt/monitoring/monitoring-project
 
-            # Evita el warning de "dubious ownership"
+            # Evita warning de "dubious ownership"
             git config --global --add safe.directory /opt/monitoring
 
-            # Actualiza el repo
+            # Actualiza repo
             git pull origin main
 
-            # Evita error de permisos con Docker
-            sudo docker-compose pull
-            sudo docker-compose up -d --remove-orphans
+            # Levanta Docker Compose (sin sudo)
+            docker-compose pull
+            docker-compose up -d --remove-orphans
