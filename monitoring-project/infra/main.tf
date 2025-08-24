@@ -128,7 +128,7 @@ resource "aws_instance" "nginx_server" {
   associate_public_ip_address = true
 
   key_name = aws_key_pair.generated_key.key_name
-  
+
   user_data = <<-EOF
               #!/bin/bash
               # Actualizar el sistema
