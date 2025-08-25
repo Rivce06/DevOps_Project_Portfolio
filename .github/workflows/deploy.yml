@@ -103,26 +103,30 @@ jobs:
             # Forzar PATH
             export PATH=$PATH:/usr/local/bin:/usr/bin
 
-            # Crear carpeta principal si no existe
-            if [ ! -d /opt/monitoring/monitoring-project ]; then
-              sudo mkdir -p /opt/monitoring/monitoring-project
-              sudo chown -R ec2-user:ec2-user /opt/monitoring
+            # Retry loop hasta que EC2 esté lista
+            for i in {1..10}; do
+              if ssh -o ConnectTimeout=5 ec2-user@${{ env.EC2_IP }} "echo ok" &>/dev/null; then
+                echo "✅ EC2 accesible"
+                break
+              fi
+              echo "⏳ Esperando a que EC2 esté lista..."
+              sleep 10
+            done
+
+            cd /opt/monitoring
+
+            # Borrar carpeta vieja y clonar repo limpio
+            if [ -d monitoring-project ]; then
+              sudo rm -rf monitoring-project
             fi
-            cd /opt/monitoring/monitoring-project
+            git clone https://github.com/Rivce06/DevOps_Project_Portfolio.git monitoring-project
+            cd monitoring-project
 
             # Configurar git safe directory
             git config --global --add safe.directory /opt/monitoring
 
-            # Si el repo no existe, clonarlo; si ya existe, limpiar y actualizar
-            if [ ! -d .git ]; then
-              git clone https://github.com/Rivce06/DevOps_Project_Portfolio.git .
-            else
-              git fetch --all
-              git reset --hard origin/main
-            fi
-
-            # Verificar que los archivos para montar existen
-            REQUIRED_FILES=("monitoring/prometheus.yml" "monitoring/grafana.yml")
+            # Validar que archivos necesarios para Docker Compose existan
+            REQUIRED_FILES=("monitoring/prometheus.yml" "monitoring/grafana.yml" "monitoring/nginx.conf")
             for f in "${REQUIRED_FILES[@]}"; do
               if [ ! -f "$f" ]; then
                 echo "❌ File $f does not exist!"
