@@ -103,16 +103,10 @@ jobs:
             # Forzar PATH
             export PATH=$PATH:/usr/local/bin:/usr/bin
 
-            # Retry loop hasta que EC2 esté lista
-            for i in {1..10}; do
-              if ssh -o ConnectTimeout=5 ec2-user@${{ env.EC2_IP }} "echo ok" &>/dev/null; then
-                echo "✅ EC2 accesible"
-                break
-              fi
-              echo "⏳ Esperando a que EC2 esté lista..."
-              sleep 10
-            done
+            PROJECT_DIR="/opt/monitoring/monitoring-project"
 
+            # Crear carpeta base si no existe
+            sudo mkdir -p /opt/monitoring
             cd /opt/monitoring
 
             # Borrar carpeta vieja y clonar repo limpio
@@ -120,20 +114,29 @@ jobs:
               sudo rm -rf monitoring-project
             fi
             git clone https://github.com/Rivce06/DevOps_Project_Portfolio.git monitoring-project
-            cd monitoring-project
 
-            # Configurar git safe directory
-            git config --global --add safe.directory /opt/monitoring
+            # Debug ruta y archivos
+            echo "📂 Estoy en: $(pwd)"
+            echo "📂 Contenido de $PROJECT_DIR/monitoring:"
+            ls -l $PROJECT_DIR/monitoring || echo "❌ Directorio monitoring no existe"
 
-            # Validar que archivos necesarios para Docker Compose existan
-            REQUIRED_FILES=("monitoring/prometheus.yml" "monitoring/grafana.yml" "monitoring/nginx.conf")
+            # Validar archivos obligatorios
+            REQUIRED_FILES=(
+              "$PROJECT_DIR/monitoring/prometheus.yml"
+              "$PROJECT_DIR/monitoring/grafana.yml"
+              "$PROJECT_DIR/monitoring/nginx.conf"
+            )
+
             for f in "${REQUIRED_FILES[@]}"; do
               if [ ! -f "$f" ]; then
-                echo "❌ File $f does not exist!"
+                echo "❌ File $f no existe, abortando pipeline"
                 exit 1
+              else
+                echo "✅ File $f encontrado"
               fi
             done
 
             # Levantar Docker Compose
+            cd $PROJECT_DIR
             docker-compose pull
             docker-compose up -d --remove-orphans

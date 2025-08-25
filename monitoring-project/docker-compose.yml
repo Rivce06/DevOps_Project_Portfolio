@@ -5,6 +5,8 @@ services:
     image: rivce/custom-nginx:latest
     ports:
       - "80:80"
+    volumes:
+      - ./monitoring/nginx.conf:/etc/nginx/nginx.conf:ro
 
   app:
     build: ./app
@@ -14,7 +16,7 @@ services:
   prometheus:
     image: prom/prometheus:latest
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
 
@@ -22,6 +24,8 @@ services:
     image: grafana/grafana:latest
     ports:
       - "3000:3000"
+    volumes:
+      - ./monitoring/grafana.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
 
   node_exporter:
     image: prom/node-exporter:latest
