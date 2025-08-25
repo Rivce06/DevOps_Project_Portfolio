@@ -100,21 +100,36 @@ jobs:
           username: ec2-user
           key_path: monitoring-project.pem
           script: |
+            # Forzar PATH
             export PATH=$PATH:/usr/local/bin:/usr/bin
 
+            # Crear carpeta principal si no existe
             if [ ! -d /opt/monitoring/monitoring-project ]; then
-              mkdir -p /opt/monitoring/monitoring-project
-              chown ec2-user:ec2-user /opt/monitoring/monitoring-project
+              sudo mkdir -p /opt/monitoring/monitoring-project
+              sudo chown -R ec2-user:ec2-user /opt/monitoring
             fi
             cd /opt/monitoring/monitoring-project
 
+            # Configurar git safe directory
             git config --global --add safe.directory /opt/monitoring
 
+            # Si el repo no existe, clonarlo; si ya existe, limpiar y actualizar
             if [ ! -d .git ]; then
               git clone https://github.com/Rivce06/DevOps_Project_Portfolio.git .
+            else
+              git fetch --all
+              git reset --hard origin/main
             fi
 
-            git pull origin main
+            # Verificar que los archivos para montar existen
+            REQUIRED_FILES=("monitoring/prometheus.yml" "monitoring/grafana.yml")
+            for f in "${REQUIRED_FILES[@]}"; do
+              if [ ! -f "$f" ]; then
+                echo "❌ File $f does not exist!"
+                exit 1
+              fi
+            done
 
+            # Levantar Docker Compose
             docker-compose pull
             docker-compose up -d --remove-orphans
