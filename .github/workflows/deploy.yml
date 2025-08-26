@@ -17,17 +17,17 @@ jobs:
       TFSTATE_KEY: ${{ secrets.TFSTATE_KEY }}
 
     steps:
-      # 1️⃣ Checkout repo
+      # 1️⃣ Checkout repo (para build de imágenes)
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      # 2️⃣ Set up Terraform
+      # 2️⃣ Set up Terraform (necesario para manipular tfstate si querés)
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.8.5
 
-      # 3️⃣ Get EC2 public IP from tfstate in S3
+      # 3️⃣ Get EC2 public IP desde tfstate en S3
       - name: Get EC2 IP from tfstate in S3
         id: ec2ip
         run: |
@@ -47,7 +47,7 @@ jobs:
       - name: Debug EC2 IP
         run: echo ">$EC2_IP<"
 
-      # 5️⃣ Set up Python
+      # 5️⃣ Set up Python (para generar index.html)
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -81,7 +81,7 @@ jobs:
           docker build -t $IMAGE_NAME:latest .
           docker push $IMAGE_NAME:latest
 
-      # 🔟 Retrieve SSH key from SSM and save as file
+      # 🔟 Retrieve SSH key desde SSM
       - name: Retrieve SSH key from SSM
         run: |
           aws ssm get-parameter \
@@ -92,7 +92,7 @@ jobs:
             --region $AWS_REGION > monitoring-project.pem
           chmod 600 monitoring-project.pem
 
-      # 1️⃣1️⃣ Deploy stack on EC2
+      # 1️⃣1️⃣ Deploy en EC2
       - name: Deploy stack on EC2
         uses: appleboy/ssh-action@v0.1.6
         with:
@@ -100,43 +100,8 @@ jobs:
           username: ec2-user
           key_path: monitoring-project.pem
           script: |
-            # Forzar PATH
-            export PATH=$PATH:/usr/local/bin:/usr/bin
-
-            PROJECT_DIR="/opt/monitoring/monitoring-project"
-
-            # Crear carpeta base si no existe
-            sudo mkdir -p /opt/monitoring
-            cd /opt/monitoring
-
-            # Borrar carpeta vieja y clonar repo limpio
-            if [ -d monitoring-project ]; then
-              sudo rm -rf monitoring-project
-            fi
-            git clone https://github.com/Rivce06/DevOps_Project_Portfolio.git monitoring-project
-
-            # Debug ruta y archivos
-            echo "📂 Estoy en: $(pwd)"
-            echo "📂 Contenido de $PROJECT_DIR/monitoring:"
-            ls -l $PROJECT_DIR/monitoring || echo "❌ Directorio monitoring no existe"
-
-            # Validar archivos obligatorios
-            REQUIRED_FILES=(
-              "$PROJECT_DIR/monitoring/prometheus.yml"
-              "$PROJECT_DIR/monitoring/grafana.yml"
-              "$PROJECT_DIR/monitoring/nginx.conf"
-            )
-
-            for f in "${REQUIRED_FILES[@]}"; do
-              if [ ! -f "$f" ]; then
-                echo "❌ File $f no existe, abortando pipeline"
-                exit 1
-              else
-                echo "✅ File $f encontrado"
-              fi
-            done
-
-            # Levantar Docker Compose
-            cd $PROJECT_DIR
-            docker-compose pull
-            docker-compose up -d --remove-orphans
+            cd /opt/monitoring/monitoring-project
+            git reset --hard
+            git pull origin main
+            sudo docker-compose pull
+            sudo docker-compose up -d --remove-orphans
