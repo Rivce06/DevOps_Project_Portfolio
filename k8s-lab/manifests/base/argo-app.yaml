@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/Rivce06/DevOps_Project_Portfolio.git
-    targetRevision: HEAD
+    targetRevision: feat/production-hardening
     path: manifests/base
   destination:
     server: https://kubernetes.default.svc
