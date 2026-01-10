@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-index-html
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Kubernetes Decoupling</title>
+      <style>body { font-family: sans-serif; text-align: center; padding-top: 50px; }</style>
+    </head>
+    <body>
+      <h1>Success!</h1>
+      <p>This page is served from a <strong>ConfigMap</strong>.</p>
+      <p>We didn't have to build a new Docker image to change this text.</p>
+    </body>
+    </html>
