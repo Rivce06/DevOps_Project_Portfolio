@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/Rivce06/DevOps_Project_Portfolio.git
     targetRevision: feat/production-hardening
-    path: manifests/base
+    path: k8s-lab/manifests/base 
   destination:
     server: https://kubernetes.default.svc
     namespace: default
